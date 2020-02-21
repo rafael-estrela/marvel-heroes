@@ -11,7 +11,7 @@ import br.eti.rafaelcouto.marvelheroes.view.list.BaseAdapter
 class CharactersAdapter(
     context: Context,
     items: LiveData<List<Character>>
-): BaseAdapter<Character, CharactersViewHolder>(context, items) {
+) : BaseAdapter<Character, CharactersViewHolder>(context, items) {
     var onItemClick: OnItemClickListener? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CharactersViewHolder {

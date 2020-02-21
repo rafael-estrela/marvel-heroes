@@ -4,16 +4,23 @@ import android.os.Bundle
 import br.eti.rafaelcouto.marvelheroes.R
 import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
-import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.Comic
-import br.eti.rafaelcouto.marvelheroes.network.service.CharacterDetailsService
+import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.model.general.Thumbnail
-import com.nhaarman.mockitokotlin2.*
+import br.eti.rafaelcouto.marvelheroes.network.service.CharacterDetailsService
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.*
+import org.hamcrest.Matchers.contains
+import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.notNullValue
+import org.hamcrest.Matchers.nullValue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -100,7 +107,7 @@ class CharacterDetailsViewModelTest {
         this.dummyCharacterId = 0
         this.dummyComicId = 0
 
-        sut.characterComics.observeForever {  }
+        sut.characterComics.observeForever { }
     }
 
     @Test

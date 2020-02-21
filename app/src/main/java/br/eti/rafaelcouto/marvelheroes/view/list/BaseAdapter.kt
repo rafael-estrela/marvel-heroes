@@ -5,10 +5,10 @@ import android.view.LayoutInflater
 import androidx.lifecycle.LiveData
 import androidx.recyclerview.widget.RecyclerView
 
-abstract class BaseAdapter<Item, VH: RecyclerView.ViewHolder>(
+abstract class BaseAdapter<Item, VH : RecyclerView.ViewHolder>(
     context: Context,
     private val items: LiveData<List<Item>>
-): RecyclerView.Adapter<VH>() {
+) : RecyclerView.Adapter<VH>() {
     protected val inflater: LayoutInflater = LayoutInflater.from(context)
 
     override fun getItemCount(): Int = items.value.orEmpty().size

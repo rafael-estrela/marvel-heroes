@@ -6,7 +6,7 @@ import com.squareup.picasso.Picasso
 
 class CharactersViewHolder(
     val binding: ItemCharacterBinding
-): RecyclerView.ViewHolder(binding.root) {
+) : RecyclerView.ViewHolder(binding.root) {
     fun setOnItemClickListener(listener: OnItemClickListener?) {
         binding.root.setOnClickListener { listener?.onItemClick(adapterPosition) }
     }

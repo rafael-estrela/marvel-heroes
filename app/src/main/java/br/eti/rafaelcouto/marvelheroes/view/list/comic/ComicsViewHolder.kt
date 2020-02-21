@@ -6,7 +6,7 @@ import com.squareup.picasso.Picasso
 
 class ComicsViewHolder(
     val binding: ItemComicBinding
-): RecyclerView.ViewHolder(binding.root) {
+) : RecyclerView.ViewHolder(binding.root) {
     fun displayImage() {
         Picasso.with(binding.root.context)
             .load(binding.item?.thumbnail?.portraitRegular)

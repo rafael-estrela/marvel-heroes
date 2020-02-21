@@ -11,7 +11,7 @@ import br.eti.rafaelcouto.marvelheroes.view.list.BaseAdapter
 class ComicsAdapter(
     context: Context,
     items: LiveData<List<Comic>>
-): BaseAdapter<Comic, ComicsViewHolder>(context, items) {
+) : BaseAdapter<Comic, ComicsViewHolder>(context, items) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ComicsViewHolder {
         return ComicsViewHolder(
             DataBindingUtil.inflate(inflater, viewType, parent, false)

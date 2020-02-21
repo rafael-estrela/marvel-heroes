@@ -1,9 +1,9 @@
 package br.eti.rafaelcouto.marvelheroes.view
 
 import android.content.res.Configuration
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations
@@ -25,7 +25,7 @@ class CharactersListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCharactersListBinding
 
     private val numberOfColumns: Int
-        get() = when(resources.configuration.orientation) {
+        get() = when (resources.configuration.orientation) {
             Configuration.ORIENTATION_PORTRAIT -> 3
             else -> 5
         }

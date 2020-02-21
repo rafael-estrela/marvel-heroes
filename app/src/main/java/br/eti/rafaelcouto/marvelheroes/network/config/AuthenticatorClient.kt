@@ -1,13 +1,13 @@
 package br.eti.rafaelcouto.marvelheroes.network.config
 
 import br.eti.rafaelcouto.marvelheroes.BuildConfig
+import java.math.BigInteger
+import java.security.MessageDigest
+import java.util.Date
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
-import java.math.BigInteger
-import java.security.MessageDigest
-import java.util.*
 
 object AuthenticatorClient {
     private const val APIKEY_FIELD = "apikey"
@@ -15,7 +15,7 @@ object AuthenticatorClient {
     private const val HASH_FIELD = "hash"
 
     fun build(): OkHttpClient = OkHttpClient.Builder().apply {
-        addInterceptor(object: Interceptor {
+        addInterceptor(object : Interceptor {
             override fun intercept(chain: Interceptor.Chain): Response {
                 val ts = Date().time.toString()
 

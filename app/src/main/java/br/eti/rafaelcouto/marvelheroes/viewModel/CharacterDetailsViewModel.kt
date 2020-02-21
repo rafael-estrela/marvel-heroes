@@ -17,7 +17,7 @@ import io.reactivex.schedulers.Schedulers
 
 class CharacterDetailsViewModel(
     private val service: CharacterDetailsService
-): BaseViewModel() {
+) : BaseViewModel() {
     companion object {
         const val CHARACTER_ID_KEY = "characterIdExtra"
         const val COMICS_PER_PAGE = 10

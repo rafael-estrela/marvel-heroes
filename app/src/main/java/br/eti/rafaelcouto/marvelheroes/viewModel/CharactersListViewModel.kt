@@ -14,7 +14,7 @@ import io.reactivex.schedulers.Schedulers
 class CharactersListViewModel(
     private val router: CharactersListRouter,
     private val service: CharactersListService
-): BaseViewModel() {
+) : BaseViewModel() {
     // static
     companion object {
         const val CHARACTERS_PER_PAGE = 20
@@ -70,7 +70,7 @@ class CharactersListViewModel(
             firstVisibleItemPosition >= 0
         }?.takeIf {
             characters.value?.size?.let {
-               it < maxItems
+                it < maxItems
             } ?: false
         } != null
     }

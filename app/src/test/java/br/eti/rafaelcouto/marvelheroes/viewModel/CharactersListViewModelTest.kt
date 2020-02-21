@@ -4,14 +4,20 @@ import br.eti.rafaelcouto.marvelheroes.R
 import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
-import br.eti.rafaelcouto.marvelheroes.network.service.CharactersListService
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
+import br.eti.rafaelcouto.marvelheroes.network.service.CharactersListService
 import br.eti.rafaelcouto.marvelheroes.router.CharactersListRouter
-import com.nhaarman.mockitokotlin2.*
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.*
+import org.hamcrest.Matchers.contains
+import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.nullValue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -45,7 +51,7 @@ class CharactersListViewModelTest {
 
     private val dummyCharacter: Character
         get() = Character().apply {
-            id = (++dummyId)*100
+            id = (++dummyId) * 100
             name = "Marvel character #$id"
         }
 
