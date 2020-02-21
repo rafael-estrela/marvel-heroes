@@ -22,7 +22,7 @@ Esse aplicativo deverá listar os personagens em uma tela com rolagem infinita e
     *  Utilização de **DataBinding**, **Lifecycle 2.2.0** e **ReactiveExtensions**:
         *  **RxAndroid 2.1.1**;
         *  **RxJava 2.2.10**;
-        *  **RxKotlin 2.4.0)**.
+        *  **RxKotlin 2.4.0**.
     *  Dependências para API _digest_:
         *  **Retrofit 2.7.1**;
         *  **Gson Converter 2.7.1**;
@@ -52,20 +52,20 @@ Foram realizados testes unitários nas camadas de _Network_, _Navigation_ e _Bus
 
 A cobertura geral dos testes ficou da seguinte maneira:
 
-![Cobertura geral](documentation/coverage_general.png)
+![Cobertura geral](documentation/coverage_general_v2.png)
 
 A cobertura por camada ficou da seguinte maneira:
 
 * _Network_:
 
-![Cobertura camada Network - Config](documentation/coverage_network_config.png)
+![Cobertura camada Network - Config](documentation/coverage_network_config_v2.png)
 
-![Cobertura camada Network - Services](documentation/coverage_network_service.png)
+![Cobertura camada Network - Services](documentation/coverage_network_service_v2.png)
 
 * _Navigation_:
 
-![Cobertura camada Navigation](documentation/coverage_navigation.png)
+![Cobertura camada Navigation](documentation/coverage_navigation_v2.png)
 
 * _Business_:
 
-![Cobertura camada Business](documentation/coverage_business.png)
+![Cobertura camada Business](documentation/coverage_business_v2.png)
