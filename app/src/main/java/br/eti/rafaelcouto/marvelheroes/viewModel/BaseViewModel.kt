@@ -15,6 +15,10 @@ abstract class BaseViewModel : ViewModel() {
     val hasError: LiveData<Int>
         get() = mHasError
 
+    protected val mCopyright = MutableLiveData<String>()
+    val copyright: LiveData<String>
+        get() = mCopyright
+
     // rx
     protected val disposeBag = CompositeDisposable()
 

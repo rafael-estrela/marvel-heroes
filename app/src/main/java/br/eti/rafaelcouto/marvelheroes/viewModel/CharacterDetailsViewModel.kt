@@ -79,6 +79,7 @@ class CharacterDetailsViewModel(
         service.loadCharacterComics(characterId, offset)
             .map {
                 maxItems = it.data.total
+                mCopyright.postValue(it.attributionText)
                 it.data.results
             }.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -111,6 +112,7 @@ class CharacterDetailsViewModel(
             service.loadCharacterComics(characterId, offset)
                 .map {
                     maxItems = it.data.total
+                    mCopyright.postValue(it.attributionText)
                     it.data.results
                 }.subscribeOn(Schedulers.newThread()),
             BiFunction { character: CharacterDetails, comics: List<Comic> ->

@@ -12,4 +12,8 @@ class CharactersListService(
     fun loadCharacters(offset: Int): Single<ResponseBody<Character>> {
         return api.getPublicCharacters(CharactersListViewModel.CHARACTERS_PER_PAGE, offset)
     }
+
+    fun filterCharacters(offset: Int, name: String): Single<ResponseBody<Character>> {
+        return api.getPublicCharacters(CharactersListViewModel.CHARACTERS_PER_PAGE, offset, name)
+    }
 }

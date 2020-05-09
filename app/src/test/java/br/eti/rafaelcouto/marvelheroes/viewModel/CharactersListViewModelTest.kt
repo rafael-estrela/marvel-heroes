@@ -1,5 +1,6 @@
 package br.eti.rafaelcouto.marvelheroes.viewModel
 
+import android.os.Build
 import br.eti.rafaelcouto.marvelheroes.R
 import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.Character
@@ -26,8 +27,10 @@ import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
 class CharactersListViewModelTest {
     // rule
     @Rule
@@ -59,6 +62,7 @@ class CharactersListViewModelTest {
         get() = ResponseBody(
             200,
             "ok",
+            "copyright",
             DataWrapper(
                 dummyId, 20, 100, listOf(
                     dummyCharacter,
@@ -123,6 +127,23 @@ class CharactersListViewModelTest {
     }
 
     @Test
+    fun `when list requested then copyright must be updated`() {
+        whenever(
+            mockService.loadCharacters(0)
+        ) doReturn Single.just(dummyResult)
+
+        assertThat(sut.copyright.value, nullValue())
+
+        // when
+
+        sut.loadCharacters()
+
+        // then
+
+        assertThat(sut.copyright.value, equalTo("copyright"))
+    }
+
+    @Test
     fun `when initial character list requested then should display error`() {
         whenever(
             mockService.loadCharacters(0)
@@ -153,6 +174,39 @@ class CharactersListViewModelTest {
     }
 
     @Test
+    fun `given initial character list when clear requested then should clear list and reset pagination`() {
+        val result = dummyResult
+
+        whenever(
+            mockService.loadCharacters(0)
+        ) doReturn Single.just(result)
+
+        assertThat(sut.characters.value, nullValue())
+        assertThat(sut.isLoading.value, nullValue())
+        assertThat(sut.hasError.value, nullValue())
+
+        // given
+
+        sut.loadCharacters()
+        verify(mockService).loadCharacters(0)
+        assertThat(sut.isLoading.value, equalTo(false))
+        assertThat(sut.hasError.value, nullValue())
+
+        assertThat(sut.characters.value, equalTo(result.data.results))
+
+        // when
+
+        sut.clearList()
+
+        // then
+
+        assertThat(sut.characters.value, equalTo(emptyList()))
+
+        sut.loadCharacters()
+        verify(mockService, times(2)).loadCharacters(0)
+    }
+
+    @Test
     fun `given initial character list when new page requested then should request new page`() {
         val firstResult = dummyResult
         val secondResult = dummyResult
@@ -180,11 +234,91 @@ class CharactersListViewModelTest {
 
         // when
 
-        sut.loadCharacters()
+        sut.reload()
 
         // then
 
         verify(mockService).loadCharacters(20)
+
+        assertThat(sut.isLoading.value, equalTo(true))
+        assertThat(sut.hasError.value, nullValue())
+
+        delayer.onComplete()
+
+        assertThat(sut.isLoading.value, equalTo(false))
+        assertThat(sut.hasError.value, nullValue())
+
+        assertThat(
+            sut.characters.value,
+            contains(
+                *firstResult.data.results.toTypedArray(),
+                *secondResult.data.results.toTypedArray()
+            )
+        )
+    }
+
+    @Test
+    fun `given initial list when filter requested then only filtered list should be available`() {
+        val expected = dummyResult
+
+        whenever(
+            mockService.filterCharacters(0, "dummy")
+        ) doReturn Single.just(expected).delaySubscription(delayer)
+
+        assertThat(sut.characters.value, nullValue())
+        assertThat(sut.isLoading.value, nullValue())
+        assertThat(sut.hasError.value, nullValue())
+
+        // when
+
+        sut.filterCharacters("dummy")
+
+        // then
+
+        verify(mockService).filterCharacters(0, "dummy")
+        assertThat(sut.isLoading.value, equalTo(true))
+
+        delayer.onComplete()
+
+        assertThat(sut.isLoading.value, equalTo(false))
+        assertThat(sut.hasError.value, nullValue())
+
+        assertThat(sut.characters.value, equalTo(expected.data.results))
+    }
+
+    @Test
+    fun `given filtered list when paginate requested then filtered list should be paginated`() {
+        val firstResult = dummyResult
+        val secondResult = dummyResult
+
+        whenever(
+            mockService.filterCharacters(0, "dummy")
+        ) doReturn Single.just(firstResult)
+
+        whenever(
+            mockService.filterCharacters(20, "dummy")
+        ) doReturn Single.just(secondResult).delaySubscription(delayer)
+
+        assertThat(sut.characters.value, nullValue())
+        assertThat(sut.isLoading.value, nullValue())
+        assertThat(sut.hasError.value, nullValue())
+
+        // given
+
+        sut.filterCharacters("dummy")
+        verify(mockService).filterCharacters(0, "dummy")
+        assertThat(sut.isLoading.value, equalTo(false))
+        assertThat(sut.hasError.value, nullValue())
+
+        assertThat(sut.characters.value, equalTo(firstResult.data.results))
+
+        // when
+
+        sut.reload()
+
+        // then
+
+        verify(mockService).filterCharacters(20, "dummy")
 
         assertThat(sut.isLoading.value, equalTo(true))
         assertThat(sut.hasError.value, nullValue())
@@ -224,7 +358,7 @@ class CharactersListViewModelTest {
 
         // when
 
-        sut.loadCharacters()
+        sut.reload()
 
         // then
 
@@ -305,6 +439,7 @@ class CharactersListViewModelTest {
         val dummyResult = ResponseBody(
             200,
             "ok",
+            "copyright",
             DataWrapper(
                 0, 20, 20, listOf(
                     dummyCharacter,

@@ -1,5 +1,6 @@
 package br.eti.rafaelcouto.marvelheroes.network.service
 
+import android.os.Build
 import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
@@ -16,8 +17,10 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
 class CharactersListServiceTest {
     // rules
     @Rule
@@ -44,6 +47,7 @@ class CharactersListServiceTest {
         get() = ResponseBody(
             200,
             "ok",
+            "copyright",
             DataWrapper(0, 10, 100, listOf(
                 dummyCharacter,
                 dummyCharacter,
@@ -67,7 +71,7 @@ class CharactersListServiceTest {
     }
 
     @Test
-    fun `when initial characters list requested then api should return initial characters list`() {
+    fun `when characters list requested then api should return initial characters list`() {
         val expected = dummyResult
 
         whenever(sut.loadCharacters(0)) doReturn Single.just(expected)
@@ -95,6 +99,38 @@ class CharactersListServiceTest {
         // then
 
         verify(mockApi).getPublicCharacters(20, 0)
+        result.assertError(expected)
+    }
+
+    @Test
+    fun `when filtered list requested then api should return initial characters list`() {
+        val expected = dummyResult
+
+        whenever(sut.filterCharacters(0, "dummy")) doReturn Single.just(expected)
+
+        // when
+
+        val result = sut.filterCharacters(0, "dummy").test()
+
+        // then
+
+        verify(mockApi).getPublicCharacters(20, 0, "dummy")
+        result.assertNoErrors().assertValue(expected)
+    }
+
+    @Test
+    fun `when filtered list requested then api should fail`() {
+        val expected = Throwable("dummy exception")
+
+        whenever(sut.filterCharacters(0, "dummy")) doReturn Single.error(expected)
+
+        // when
+
+        val result = sut.filterCharacters(0, "dummy").test()
+
+        // then
+
+        verify(mockApi).getPublicCharacters(20, 0, "dummy")
         result.assertError(expected)
     }
 }

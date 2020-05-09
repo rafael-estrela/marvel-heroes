@@ -1,5 +1,6 @@
 package br.eti.rafaelcouto.marvelheroes.network.config
 
+import android.os.Build
 import br.eti.rafaelcouto.marvelheroes.BuildConfig
 import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
@@ -13,8 +14,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
 class AuthenticatorClientTest {
     // mocks
     private lateinit var mockWebServer: MockWebServer

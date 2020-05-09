@@ -1,6 +1,10 @@
 # Marvel Characters
 
-Projeto realizado para avaliação de técnicas de desenvolvimento, solicitado pela **[Sinqia](https://www.sinqia.com.br/)**.
+Projeto realizado para avaliação de técnicas de desenvolvimento Android.
+
+Em primeiro momento, solicitado pela **[Sinqia](https://www.sinqia.com.br/)**.
+
+Em segundo momento, ajustado e melhorado para avaliação da **[Agibank](https://www.agibank.com.br/)**.
 
 ### A tarefa
 
@@ -12,11 +16,12 @@ Esse aplicativo deverá listar os personagens em uma tela com rolagem infinita e
 
 *  Técnica de desenvolvimento: _Test Driven Development_ (**TDD**);
 *  Arquitetura: _Model View ViewModel_ (**MVVM**);
-*  Linguagem: **Kotlin 1.3.61**;
-*  IDE: **AndroidStudio 3.5.3**;
-*  **Gradle 3.5.3**, _dist_ **5.4.1**;
+*  Linguagem: **Kotlin 1.3.72**;
+*  IDE: **AndroidStudio 3.6.3**;
+*  **Gradle 3.6.3**, _dist_ **5.6.4**;
 *  Demais informações técnicas:
     *  Projeto utilizando **AndroidX**;
+    *  Implementação de **Menu** e **SearchView**;
     *  _Layouts_ utilizam **RecyclerView**, **NestedScrollView** e **ConstraintLayout**;
     *  Análise de código com **Ktlint 0.36.0**;
     *  Utilização de **DataBinding**, **Lifecycle 2.2.0** e **ReactiveExtensions**:
@@ -36,7 +41,13 @@ Esse aplicativo deverá listar os personagens em uma tela com rolagem infinita e
         *  **MockWebServer 4.4.0**;
         *  **Robolectric 4.1**.
 
-### Camadas
+### Características da aplicação
+* Tela inicial: lista de personagens por ordem alfabética (retorno padrão da API), apresentada em uma _grid_ com 3 colunas. São exibidos 20 personagens por página. É possível filtrar os personagens por nome, com a nova lista representando personagens cujo nome inicie com o termo utilizado.
+* Tela de detalhes: nome, imagem e descrição do personagem, assim como uma lista com rolagem infinita das _comics_ em que apareceu, exibidas em uma _grid_ de 2 colunas, 10 _comics_ por página.
+* Caso alguma requisição falhe, é possível solicitar sua repetição.
+* Cenários que envolvem mais de uma requisição para carregar o conteúdo da tela foram otimizados com chamadas paralelas.
+
+### Blueprint
 
 O projeto foi desenvolvido considerando as seguintes camadas:
 
@@ -52,20 +63,20 @@ Foram realizados testes unitários nas camadas de _Network_, _Navigation_ e _Bus
 
 A cobertura geral dos testes ficou da seguinte maneira:
 
-![Cobertura geral](documentation/coverage_general_v2.png)
+![Cobertura geral](documentation/coverage_general_v3.png)
 
 A cobertura por camada ficou da seguinte maneira:
 
 * _Network_:
 
-![Cobertura camada Network - Config](documentation/coverage_network_config_v2.png)
+![Cobertura camada Network - Config](documentation/coverage_network_config_v3.png)
 
-![Cobertura camada Network - Services](documentation/coverage_network_service_v2.png)
+![Cobertura camada Network - Services](documentation/coverage_network_service_v3.png)
 
 * _Navigation_:
 
-![Cobertura camada Navigation](documentation/coverage_navigation_v2.png)
+![Cobertura camada Navigation](documentation/coverage_navigation_v3.png)
 
 * _Business_:
 
-![Cobertura camada Business](documentation/coverage_business_v2.png)
+![Cobertura camada Business](documentation/coverage_business_v3.png)

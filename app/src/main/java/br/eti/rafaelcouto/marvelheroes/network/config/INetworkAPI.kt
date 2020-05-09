@@ -31,6 +31,14 @@ interface INetworkAPI {
         @Query("offset") offset: Int
     ): Single<ResponseBody<Character>>
 
+    // necessário porque, caso nameStartsWith esteja vazio, retorna 409
+    @GET("v1/public/characters")
+    fun getPublicCharacters(
+        @Query("limit") limit: Int,
+        @Query("offset") offset: Int,
+        @Query("nameStartsWith") name: String
+    ): Single<ResponseBody<Character>>
+
     @GET("v1/public/characters/{characterId}")
     fun getPublicCharacterInfo(
         @Path("characterId") characterId: Int

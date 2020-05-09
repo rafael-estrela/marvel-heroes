@@ -1,6 +1,7 @@
 package br.eti.rafaelcouto.marvelheroes.router
 
 import android.content.Intent
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import br.eti.rafaelcouto.marvelheroes.view.CharacterDetailsActivity
 import br.eti.rafaelcouto.marvelheroes.viewModel.CharacterDetailsViewModel
@@ -13,8 +14,10 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
 class CharactersListRouterTest {
     // sut
     private lateinit var sut: CharactersListRouter

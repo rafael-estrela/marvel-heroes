@@ -1,5 +1,6 @@
 package br.eti.rafaelcouto.marvelheroes.viewModel
 
+import android.os.Build
 import android.os.Bundle
 import br.eti.rafaelcouto.marvelheroes.R
 import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
@@ -29,8 +30,10 @@ import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
 class CharacterDetailsViewModelTest {
     // rule
     @Rule
@@ -76,7 +79,7 @@ class CharacterDetailsViewModelTest {
         get() = DataWrapper(0, 10, 20, dummyCharacterComicsList)
 
     private val dummyCharacterComics: ResponseBody<Comic>
-        get() = ResponseBody(200, "ok", dummyCharacterComicsDataWrapper)
+        get() = ResponseBody(200, "ok", "copyright", dummyCharacterComicsDataWrapper)
 
     // character dummies
     private var dummyCharacterId: Int = 0
@@ -97,7 +100,7 @@ class CharacterDetailsViewModelTest {
         get() = DataWrapper(0, 10, 100, dummyCharacterDetailsList)
 
     private val dummyCharacterDetailsResponse: ResponseBody<CharacterDetails>
-        get() = ResponseBody(200, "ok", dummyCharacterDetailsDataWrapper)
+        get() = ResponseBody(200, "ok", "copyright", dummyCharacterDetailsDataWrapper)
 
     @Before
     fun setUp() {
@@ -183,6 +186,33 @@ class CharacterDetailsViewModelTest {
         assertThat(sut.hasError.value, nullValue())
         assertThat(sut.characterDetails.value, equalTo(expectedResult))
         assertThat(sut.characterComics.value, equalTo(expectedComic.data.results))
+    }
+
+    @Test
+    fun `given a character id when load details requested then copyright must be updated`() {
+        whenever(
+            mockService.loadCharacterDetails(anyInt())
+        ) doReturn Single.just(dummyCharacterDetailsResponse)
+
+        whenever(
+            mockService.loadCharacterComics(100, 0)
+        ) doReturn Single.just(dummyCharacterComics)
+
+        assertThat(sut.copyright.value, nullValue())
+
+        // given
+
+        whenever(
+            mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
+        ) doReturn 100
+
+        // when
+
+        sut.loadCharacterInfo(mockExtras)
+
+        // then
+
+        assertThat(sut.copyright.value, equalTo("copyright"))
     }
 
     @Test
@@ -611,6 +641,7 @@ class CharacterDetailsViewModelTest {
         val dummyCharacterComics = ResponseBody(
             200,
             "ok",
+            "copyright",
             DataWrapper(
                 0,
                 10,

@@ -1,5 +1,6 @@
 package br.eti.rafaelcouto.marvelheroes.network.service
 
+import android.os.Build
 import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
@@ -18,8 +19,10 @@ import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
 class CharacterDetailsServiceTest {
     // rules
     @Rule
@@ -38,7 +41,7 @@ class CharacterDetailsServiceTest {
         get() = DataWrapper(0, 10, 100, listOf())
 
     private val dummyComicsList: ResponseBody<Comic>
-        get() = ResponseBody(200, "ok", dummyComicsListDataWrapper)
+        get() = ResponseBody(200, "ok", "copyright", dummyComicsListDataWrapper)
 
     // character dummies
     private var dummyCharacterId: Int = 0
@@ -55,7 +58,7 @@ class CharacterDetailsServiceTest {
         get() = DataWrapper(0, 1, 100, dummyCharacterDetailsList)
 
     private val dummyCharacterDetailsResponse: ResponseBody<CharacterDetails>
-        get() = ResponseBody(200, "ok", dummyCharacterDetailsDataWrapper)
+        get() = ResponseBody(200, "ok", "copyright", dummyCharacterDetailsDataWrapper)
 
     @Before
     fun setUp() {
