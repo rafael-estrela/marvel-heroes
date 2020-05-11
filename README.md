@@ -2,10 +2,6 @@
 
 Projeto realizado para avaliação de técnicas de desenvolvimento Android.
 
-Em primeiro momento, solicitado pela **[Sinqia](https://www.sinqia.com.br/)**.
-
-Em segundo momento, ajustado e melhorado para avaliação da **[Agibank](https://www.agibank.com.br/)**.
-
 ### A tarefa
 
 Criar um aplicativo que utilize a API pública da Marvel.
