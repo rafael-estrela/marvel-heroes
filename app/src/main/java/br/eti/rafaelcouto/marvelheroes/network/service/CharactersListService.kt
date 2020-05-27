@@ -4,16 +4,15 @@ import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.network.config.INetworkAPI
 import br.eti.rafaelcouto.marvelheroes.viewModel.CharactersListViewModel
-import io.reactivex.Single
 
 class CharactersListService(
     private val api: INetworkAPI
 ) {
-    fun loadCharacters(offset: Int): Single<ResponseBody<Character>> {
+    suspend fun loadCharacters(offset: Int): ResponseBody<Character> {
         return api.getPublicCharacters(CharactersListViewModel.CHARACTERS_PER_PAGE, offset)
     }
 
-    fun filterCharacters(offset: Int, name: String): Single<ResponseBody<Character>> {
+    suspend fun filterCharacters(offset: Int, name: String): ResponseBody<Character> {
         return api.getPublicCharacters(CharactersListViewModel.CHARACTERS_PER_PAGE, offset, name)
     }
 }

@@ -5,9 +5,7 @@ import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
-import io.reactivex.Single
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -19,35 +17,34 @@ interface INetworkAPI {
             get() = Retrofit.Builder()
                 .baseUrl(BuildConfig.API_ENDPOINT)
                 .addConverterFactory(GsonConverterFactory.create())
-                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .client(AuthenticatorClient.build())
                 .build()
                 .create(INetworkAPI::class.java)
     }
 
     @GET("v1/public/characters")
-    fun getPublicCharacters(
+    suspend fun getPublicCharacters(
         @Query("limit") limit: Int,
         @Query("offset") offset: Int
-    ): Single<ResponseBody<Character>>
+    ): ResponseBody<Character>
 
     // necessário porque, caso nameStartsWith esteja vazio, retorna 409
     @GET("v1/public/characters")
-    fun getPublicCharacters(
+    suspend fun getPublicCharacters(
         @Query("limit") limit: Int,
         @Query("offset") offset: Int,
         @Query("nameStartsWith") name: String
-    ): Single<ResponseBody<Character>>
+    ): ResponseBody<Character>
 
     @GET("v1/public/characters/{characterId}")
-    fun getPublicCharacterInfo(
+    suspend fun getPublicCharacterInfo(
         @Path("characterId") characterId: Int
-    ): Single<ResponseBody<CharacterDetails>>
+    ): ResponseBody<CharacterDetails>
 
     @GET("v1/public/characters/{characterId}/comics")
-    fun getPublicCharacterComics(
+    suspend fun getPublicCharacterComics(
         @Path("characterId") characterId: Int,
         @Query("limit") limit: Int,
         @Query("offset") offset: Int
-    ): Single<ResponseBody<Comic>>
+    ): ResponseBody<Comic>
 }

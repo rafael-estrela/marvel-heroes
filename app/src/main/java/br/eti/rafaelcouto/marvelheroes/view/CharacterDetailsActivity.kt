@@ -57,8 +57,8 @@ class CharacterDetailsActivity : AppCompatActivity() {
         overridePendingTransition(R.anim.slide_in_ltr, R.anim.slide_out_ltr)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        return item?.itemId.takeIf { it == android.R.id.home }?.let {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return item.itemId.takeIf { it == android.R.id.home }?.let {
             onBackPressed()
 
             true

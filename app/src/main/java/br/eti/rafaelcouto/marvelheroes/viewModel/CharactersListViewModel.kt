@@ -7,16 +7,15 @@ import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.network.service.CharactersListService
 import br.eti.rafaelcouto.marvelheroes.router.CharactersListRouter
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.rxkotlin.addTo
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
 
 class CharactersListViewModel(
     private val router: CharactersListRouter,
-    private val service: CharactersListService
-) : BaseViewModel() {
+    private val service: CharactersListService,
+    context: CoroutineContext = IO
+) : BaseViewModel(context) {
     // static
     companion object {
         const val CHARACTERS_PER_PAGE = 20
@@ -38,37 +37,49 @@ class CharactersListViewModel(
         isFiltering = false
         lastFilterTerm = ""
 
-        makeRequest(service.loadCharacters(offset))
+        mIsLoading.value = true
+
+        viewModelScope.launch {
+            try {
+                treatResult(service.loadCharacters(offset))
+                page++
+            } catch (e: Exception) {
+                mHasError.postValue(R.string.default_error)
+            } finally {
+                mIsLoading.postValue(false)
+            }
+        }
     }
 
     fun filterCharacters(name: String) {
         isFiltering = true
         lastFilterTerm = name
 
-        makeRequest(service.filterCharacters(offset, name))
+        mIsLoading.value = true
+
+        jobs.add(launch {
+            try {
+                treatResult(service.filterCharacters(offset, name))
+                page++
+            } catch (e: Exception) {
+                mHasError.postValue(R.string.default_error)
+            } finally {
+                mIsLoading.postValue(false)
+            }
+        })
     }
 
-    private fun makeRequest(request: Single<ResponseBody<Character>>) {
-        request.subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe { mIsLoading.value = true }
-            .doFinally { mIsLoading.value = false }
-            .map {
-                maxItems = it.data.total
-                mCopyright.value = it.attributionText
-                it.data.results
-            }.subscribeBy(onSuccess = { characters ->
-                page++
+    private fun treatResult(result: ResponseBody<Character>) {
+        result.apply {
+            maxItems = data.total
+            mCopyright.postValue(attributionText)
 
-                mCharacters.value?.let {
-                    mCharacters.value = it + characters
-                } ?: run {
-                    mCharacters.value = characters
-                }
-            }, onError = {
-                mHasError.value = R.string.default_error
+            mCharacters.value?.let {
+                mCharacters.postValue(it + data.results)
+            } ?: run {
+                mCharacters.postValue(data.results)
             }
-        ).addTo(disposeBag)
+        }
     }
 
     fun clearList() {

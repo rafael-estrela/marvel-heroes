@@ -20,14 +20,11 @@ Esse aplicativo deverá listar os personagens em uma tela com rolagem infinita e
     *  Implementação de **Menu** e **SearchView**;
     *  _Layouts_ utilizam **RecyclerView**, **NestedScrollView** e **ConstraintLayout**;
     *  Análise de código com **Ktlint 0.36.0**;
-    *  Utilização de **DataBinding**, **Lifecycle 2.2.0** e **ReactiveExtensions**:
-        *  **RxAndroid 2.1.1**;
-        *  **RxJava 2.2.10**;
-        *  **RxKotlin 2.4.0**.
+    *  Utilização de **DataBinding** e **Lifecycle 2.2.0**;
+    *  Utilização de **Coroutines**;
     *  Dependências para API _digest_:
         *  **Retrofit 2.7.1**;
         *  **Gson Converter 2.7.1**;
-        *  **RxJava2 Adapter 2.7.1**;
         *  **OkHttp LoggingInterceptor 4.4.0**;
         *  **Picasso 2.5.2**.
     *  Dependências para testes unitários:

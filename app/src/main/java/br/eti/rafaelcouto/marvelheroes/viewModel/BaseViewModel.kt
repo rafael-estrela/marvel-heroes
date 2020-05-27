@@ -3,9 +3,19 @@ package br.eti.rafaelcouto.marvelheroes.viewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import io.reactivex.disposables.CompositeDisposable
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 
-abstract class BaseViewModel : ViewModel() {
+abstract class BaseViewModel(
+    final override val coroutineContext: CoroutineContext
+) : ViewModel(), CoroutineScope {
+
+    // coroutine
+    protected val viewModelScope = CoroutineScope(coroutineContext)
+
+    protected val jobs = ArrayList<Job>()
+
     // livedata
     protected val mIsLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean>
@@ -19,9 +29,6 @@ abstract class BaseViewModel : ViewModel() {
     val copyright: LiveData<String>
         get() = mCopyright
 
-    // rx
-    protected val disposeBag = CompositeDisposable()
-
     // pagination properties
     protected var page = 0
     protected abstract val offset: Int
@@ -29,8 +36,10 @@ abstract class BaseViewModel : ViewModel() {
 
     // lifecycle
     override fun onCleared() {
-        disposeBag.dispose()
-
         super.onCleared()
+
+        jobs.forEach {
+            if (!it.isCancelled) it.cancel()
+        }
     }
 }

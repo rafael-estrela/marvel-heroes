@@ -7,17 +7,20 @@ import androidx.lifecycle.Transformations
 import br.eti.rafaelcouto.marvelheroes.R
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
+import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.network.service.CharacterDetailsService
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.functions.BiFunction
-import io.reactivex.rxkotlin.addTo
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.launch
 
 class CharacterDetailsViewModel(
-    private val service: CharacterDetailsService
-) : BaseViewModel() {
+    private val service: CharacterDetailsService,
+    context: CoroutineContext = IO
+) : BaseViewModel(context) {
     companion object {
         const val CHARACTER_ID_KEY = "characterIdExtra"
         const val COMICS_PER_PAGE = 10
@@ -75,62 +78,82 @@ class CharacterDetailsViewModel(
         } != null
     }
 
+    // api requests
     fun loadCharacterComics() {
-        service.loadCharacterComics(characterId, offset)
-            .map {
-                maxItems = it.data.total
-                mCopyright.postValue(it.attributionText)
-                it.data.results
-            }.subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe { mIsLoading.value = true }
-            .doFinally { mIsLoading.value = false }
-            .subscribeBy(onSuccess = { comics ->
-                page++
+        mIsLoading.value = true
 
-                mCharacterDetails.value?.let {
-                    mCharacterDetails.value = CharacterDetails(
-                        it.description,
-                        it.comics + comics
-                    ).apply {
-                        name = it.name
-                        thumbnail = it.thumbnail
-                    }
-                }
-            }, onError = {
-                mHasError.value = R.string.default_error
+        viewModelScope.launch {
+            try {
+                val result = service.loadCharacterComics(characterId, offset)
+
+                treatComics(result)
+                updateComics(result.data.results)
+
+                page++
+            } catch (e: Exception) {
+                mHasError.postValue(R.string.default_error)
+            } finally {
+                mIsLoading.postValue(false)
             }
-        ).addTo(disposeBag)
+        }
     }
 
-    // api requests
     private fun loadCharacterInfo() {
-        Single.zip(
-            service.loadCharacterDetails(characterId)
-                .map { it.data.results.first() }
-                .subscribeOn(Schedulers.newThread()),
-            service.loadCharacterComics(characterId, offset)
-                .map {
-                    maxItems = it.data.total
-                    mCopyright.postValue(it.attributionText)
-                    it.data.results
-                }.subscribeOn(Schedulers.newThread()),
-            BiFunction { character: CharacterDetails, comics: List<Comic> ->
-                CharacterDetails(character.description, comics).apply {
-                    name = character.name
-                    thumbnail = character.thumbnail
+        mIsLoading.value = true
+
+        viewModelScope.launch {
+            try {
+                val detailsFlow = flowOf(async { service.loadCharacterDetails(characterId) })
+                val comicsFlow = flowOf(async { service.loadCharacterComics(characterId, offset) })
+
+                detailsFlow.zip(comicsFlow) { deferredDetails, deferredComics ->
+                    treatDetails(deferredDetails.await(), deferredComics.await())
+                }.collect {
+                    mCharacterDetails.postValue(it)
                 }
-            }
-        ).subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe { mIsLoading.value = true }
-            .doFinally { mIsLoading.value = false }
-            .subscribeBy(onSuccess = {
+
                 page++
-                mCharacterDetails.value = it
-            }, onError = {
-                mHasError.value = R.string.default_error
+            } catch (e: Exception) {
+                mHasError.postValue(R.string.default_error)
+            } finally {
+                mIsLoading.postValue(false)
             }
-        ).addTo(disposeBag)
+        }
+    }
+
+    private fun treatDetails(
+        detailsResult: ResponseBody<CharacterDetails>,
+        comicsResult: ResponseBody<Comic>
+    ): CharacterDetails {
+        val details = detailsResult.data.results.first()
+        val comics = comicsResult.data.results
+
+        treatComics(comicsResult)
+
+        return CharacterDetails(details.description, comics).apply {
+            name = details.name
+            thumbnail = details.thumbnail
+        }
+    }
+
+    private fun treatComics(result: ResponseBody<Comic>) {
+        result.apply {
+            maxItems = data.total
+            mCopyright.postValue(attributionText)
+        }
+    }
+
+    private fun updateComics(comics: List<Comic>) {
+        mCharacterDetails.value?.let {
+            val details = CharacterDetails(
+                it.description,
+                it.comics + comics
+            ).apply {
+                name = it.name
+                thumbnail = it.thumbnail
+            }
+
+            mCharacterDetails.postValue(details)
+        }
     }
 }
