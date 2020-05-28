@@ -56,20 +56,20 @@ Foram realizados testes unitários nas camadas de _Network_, _Navigation_ e _Bus
 
 A cobertura geral dos testes ficou da seguinte maneira:
 
-![Cobertura geral](documentation/coverage_general_v3.png)
+![Cobertura geral](documentation/coverage_general_v4.png)
 
 A cobertura por camada ficou da seguinte maneira:
 
 * _Network_:
 
-![Cobertura camada Network - Config](documentation/coverage_network_config_v3.png)
+![Cobertura camada Network - Config](documentation/coverage_network_config_v4.png)
 
-![Cobertura camada Network - Services](documentation/coverage_network_service_v3.png)
+![Cobertura camada Network - Services](documentation/coverage_network_service_v4.png)
 
 * _Navigation_:
 
-![Cobertura camada Navigation](documentation/coverage_navigation_v3.png)
+![Cobertura camada Navigation](documentation/coverage_navigation_v4.png)
 
 * _Business_:
 
-![Cobertura camada Business](documentation/coverage_business_v3.png)
+![Cobertura camada Business](documentation/coverage_business_v4.png)
