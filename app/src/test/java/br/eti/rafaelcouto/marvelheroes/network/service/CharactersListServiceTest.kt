@@ -1,17 +1,18 @@
 package br.eti.rafaelcouto.marvelheroes.network.service
 
 import android.os.Build
-import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.network.config.INetworkAPI
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import io.reactivex.Single
+import kotlinx.coroutines.runBlocking
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.equalTo
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
@@ -22,11 +23,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class CharactersListServiceTest {
-    // rules
-    @Rule
-    @JvmField
-    val testRule = SynchronousTestRule()
-
     // sut
     private lateinit var sut: CharactersListService
 
@@ -71,66 +67,78 @@ class CharactersListServiceTest {
     }
 
     @Test
-    fun `when characters list requested then api should return initial characters list`() {
+    fun `when characters list requested then api should return initial characters list`() = runBlocking {
         val expected = dummyResult
 
-        whenever(sut.loadCharacters(0)) doReturn Single.just(expected)
+        whenever(sut.loadCharacters(0)) doReturn expected
 
         // when
 
-        val result = sut.loadCharacters(0).test()
+        val result = sut.loadCharacters(0)
 
         // then
 
         verify(mockApi).getPublicCharacters(20, 0)
-        result.assertNoErrors().assertValue(expected)
+        assertThat(expected, equalTo(result))
     }
 
-    @Test
-    fun `when characters list requested then api should fail`() {
+    @Test(expected = Throwable::class)
+    fun `when characters list requested then api should fail`() = runBlocking {
         val expected = Throwable("dummy exception")
 
-        whenever(sut.loadCharacters(0)) doReturn Single.error(expected)
+        whenever(sut.loadCharacters(0)) doThrow expected
 
         // when
 
-        val result = sut.loadCharacters(0).test()
+        try {
+            sut.loadCharacters(0)
+        } catch (e: Exception) {
+            // then
 
-        // then
+            verify(mockApi).getPublicCharacters(20, 0)
+            assertThat(e.message, equalTo("dummy exception"))
 
-        verify(mockApi).getPublicCharacters(20, 0)
-        result.assertError(expected)
+            throw e
+        }
+
+        Unit
     }
 
     @Test
-    fun `when filtered list requested then api should return initial characters list`() {
+    fun `when filtered list requested then api should return initial characters list`() = runBlocking {
         val expected = dummyResult
 
-        whenever(sut.filterCharacters(0, "dummy")) doReturn Single.just(expected)
+        whenever(sut.filterCharacters(0, "dummy")) doReturn expected
 
         // when
 
-        val result = sut.filterCharacters(0, "dummy").test()
+        val result = sut.filterCharacters(0, "dummy")
 
         // then
 
         verify(mockApi).getPublicCharacters(20, 0, "dummy")
-        result.assertNoErrors().assertValue(expected)
+        assertThat(expected, equalTo(result))
     }
 
-    @Test
-    fun `when filtered list requested then api should fail`() {
+    @Test(expected = Throwable::class)
+    fun `when filtered list requested then api should fail`() = runBlocking {
         val expected = Throwable("dummy exception")
 
-        whenever(sut.filterCharacters(0, "dummy")) doReturn Single.error(expected)
+        whenever(sut.filterCharacters(0, "dummy")) doThrow expected
 
         // when
 
-        val result = sut.filterCharacters(0, "dummy").test()
+        try {
+            sut.filterCharacters(0, "dummy")
+        } catch (e: Exception) {
+            // then
 
-        // then
+            verify(mockApi).getPublicCharacters(20, 0, "dummy")
+            assertThat(e.message, equalTo("dummy exception"))
 
-        verify(mockApi).getPublicCharacters(20, 0, "dummy")
-        result.assertError(expected)
+            throw e
+        }
+
+        Unit
     }
 }

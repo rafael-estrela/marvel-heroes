@@ -3,27 +3,26 @@ package br.eti.rafaelcouto.marvelheroes.viewModel
 import android.os.Build
 import android.os.Bundle
 import br.eti.rafaelcouto.marvelheroes.R
-import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.model.general.Thumbnail
 import br.eti.rafaelcouto.marvelheroes.network.service.CharacterDetailsService
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import io.reactivex.Single
-import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.Dispatchers.Unconfined
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.notNullValue
 import org.hamcrest.Matchers.nullValue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.anyInt
@@ -35,14 +34,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class CharacterDetailsViewModelTest {
-    // rule
-    @Rule
-    @JvmField
-    val testRule = SynchronousTestRule()
-
-    // delayer
-    private val delayer = PublishSubject.create<Boolean>()
-
     // sut
     private lateinit var sut: CharacterDetailsViewModel
 
@@ -106,7 +97,7 @@ class CharacterDetailsViewModelTest {
     fun setUp() {
         MockitoAnnotations.initMocks(this)
 
-        this.sut = CharacterDetailsViewModel(mockService)
+        this.sut = CharacterDetailsViewModel(mockService, Unconfined)
         this.dummyCharacterId = 0
         this.dummyComicId = 0
 
@@ -114,7 +105,7 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given no character id when trying to load details then should not request anything`() {
+    fun `given no character id when trying to load details then should not request anything`() = runBlocking {
         // given
 
         val extras: Bundle? = null
@@ -129,22 +120,30 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a character id when load details requested and details request ends first then should update character`() {
+    fun `given a character id when load details requested then should update character`() = runBlocking {
         val expected = dummyCharacterDetailsResponse
 
         dummyComicId = 0
 
         val expectedComic = dummyCharacterComics
 
-        val mDelayer = PublishSubject.create<Boolean>()
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, nullValue())
+            assertThat(sut.characterComics.value, nullValue())
 
-        whenever(
-            mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(expected).delaySubscription(delayer)
+            expected
+        }.whenever(mockService).loadCharacterDetails(anyInt())
 
-        whenever(
-            mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(expectedComic).delaySubscription(mDelayer)
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, nullValue())
+            assertThat(sut.characterComics.value, nullValue())
+
+            expectedComic
+        }.whenever(mockService).loadCharacterComics(100, 0)
 
         assertThat(sut.isLoading.value, nullValue())
         assertThat(sut.hasError.value, nullValue())
@@ -166,20 +165,6 @@ class CharacterDetailsViewModelTest {
         verify(mockService).loadCharacterDetails(100)
         verify(mockService).loadCharacterComics(100, 0)
 
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        delayer.onComplete()
-
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        mDelayer.onComplete()
-
         val expectedResult = expected.data.results.first()
 
         assertThat(sut.isLoading.value, equalTo(false))
@@ -189,14 +174,14 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a character id when load details requested then copyright must be updated`() {
+    fun `given a character id when load details requested then copyright must be updated`() = runBlocking {
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
         assertThat(sut.copyright.value, nullValue())
 
@@ -216,78 +201,24 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a character id when load details requested and comics request ends first then should update character`() {
-        val expected = dummyCharacterDetailsResponse
+    fun `given a character id when load details request fails then should display error`() = runBlocking {
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, nullValue())
+            assertThat(sut.characterComics.value, nullValue())
 
-        dummyComicId = 0
+            null
+        }.whenever(mockService).loadCharacterDetails(anyInt())
 
-        val expectedComic = dummyCharacterComics
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, nullValue())
+            assertThat(sut.characterComics.value, nullValue())
 
-        val mDelayer = PublishSubject.create<Boolean>()
-
-        whenever(
-            mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(expected).delaySubscription(delayer)
-
-        whenever(
-            mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(expectedComic).delaySubscription(mDelayer)
-
-        assertThat(sut.isLoading.value, nullValue())
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        // given
-
-        whenever(
-            mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
-        ) doReturn 100
-
-        // when
-
-        sut.loadCharacterInfo(mockExtras)
-
-        // then
-
-        verify(mockService).loadCharacterDetails(100)
-        verify(mockService).loadCharacterComics(100, 0)
-
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        mDelayer.onComplete()
-
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        delayer.onComplete()
-
-        val expectedResult = expected.data.results.first()
-
-        assertThat(sut.isLoading.value, equalTo(false))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, equalTo(expectedResult))
-        assertThat(sut.characterComics.value, equalTo(expectedComic.data.results))
-    }
-
-    @Test
-    fun `given a character id when load details request fails then should display error`() {
-        val mDelayer = PublishSubject.create<Boolean>()
-
-        whenever(
-            mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.error<ResponseBody<CharacterDetails>>(
-            Throwable("dummy exception")
-        ).delaySubscription(delayer)
-
-        whenever(
-            mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics).delaySubscription(mDelayer)
+            dummyCharacterComics
+        }.whenever(mockService).loadCharacterComics(100, 0)
 
         assertThat(sut.isLoading.value, nullValue())
         assertThat(sut.hasError.value, nullValue())
@@ -308,20 +239,6 @@ class CharacterDetailsViewModelTest {
 
         verify(mockService).loadCharacterDetails(100)
         verify(mockService).loadCharacterComics(100, 0)
-
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        mDelayer.onComplete()
-
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        delayer.onComplete()
 
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, equalTo(R.string.default_error))
@@ -330,18 +247,24 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a character id when load comics request fails then should display error`() {
-        val mDelayer = PublishSubject.create<Boolean>()
+    fun `given a character id when load comics request fails then should display error`() = runBlocking {
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, nullValue())
+            assertThat(sut.characterComics.value, nullValue())
 
-        whenever(
-            mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse).delaySubscription(mDelayer)
+            dummyCharacterDetailsResponse
+        }.whenever(mockService).loadCharacterDetails(anyInt())
 
-        whenever(
-            mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.error<ResponseBody<Comic>>(
-            Throwable("dummy exception")
-        ).delaySubscription(delayer)
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, nullValue())
+            assertThat(sut.characterComics.value, nullValue())
+
+            null
+        }.whenever(mockService).loadCharacterComics(100, 0)
 
         assertThat(sut.isLoading.value, nullValue())
         assertThat(sut.hasError.value, nullValue())
@@ -363,20 +286,6 @@ class CharacterDetailsViewModelTest {
         verify(mockService).loadCharacterDetails(100)
         verify(mockService).loadCharacterComics(100, 0)
 
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        mDelayer.onComplete()
-
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, nullValue())
-        assertThat(sut.characterComics.value, nullValue())
-
-        delayer.onComplete()
-
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, equalTo(R.string.default_error))
         assertThat(sut.characterDetails.value, nullValue())
@@ -384,7 +293,7 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given an initial comics list when more comics requested then should load more comics`() {
+    fun `given an initial comics list when more comics requested then should load more comics`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
@@ -396,11 +305,11 @@ class CharacterDetailsViewModelTest {
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(expected)
+        ) doReturn expected
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(expectedComic)
+        ) doReturn expectedComic
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -411,9 +320,14 @@ class CharacterDetailsViewModelTest {
 
         val secondExpectedComic = dummyCharacterComics
 
-        whenever(
-            mockService.loadCharacterComics(100, 10)
-        ) doReturn Single.just(secondExpectedComic).delaySubscription(delayer)
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, notNullValue())
+            assertThat(sut.characterComics.value, notNullValue())
+
+            secondExpectedComic
+        }.whenever(mockService).loadCharacterComics(100, 10)
 
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, nullValue())
@@ -425,12 +339,6 @@ class CharacterDetailsViewModelTest {
         // then
 
         verify(mockService).loadCharacterComics(100, 10)
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, notNullValue())
-        assertThat(sut.characterComics.value, notNullValue())
-
-        delayer.onComplete()
 
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, nullValue())
@@ -446,7 +354,7 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given an initial comics list when more comics requested then should display error`() {
+    fun `given an initial comics list when more comics requested then should display error`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
@@ -458,11 +366,11 @@ class CharacterDetailsViewModelTest {
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(expected)
+        ) doReturn expected
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(expectedComic)
+        ) doReturn expectedComic
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -471,11 +379,14 @@ class CharacterDetailsViewModelTest {
 
         // when
 
-        whenever(
-            mockService.loadCharacterComics(100, 10)
-        ) doReturn Single.error<ResponseBody<Comic>>(
-            Throwable("dummy error")
-        ).delaySubscription(delayer)
+        doAnswer {
+            assertThat(sut.isLoading.value, equalTo(true))
+            assertThat(sut.hasError.value, nullValue())
+            assertThat(sut.characterDetails.value, notNullValue())
+            assertThat(sut.characterComics.value, notNullValue())
+
+            null
+        }.whenever(mockService).loadCharacterComics(100, 10)
 
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, nullValue())
@@ -487,12 +398,6 @@ class CharacterDetailsViewModelTest {
         // then
 
         verify(mockService).loadCharacterComics(100, 10)
-        assertThat(sut.isLoading.value, equalTo(true))
-        assertThat(sut.hasError.value, nullValue())
-        assertThat(sut.characterDetails.value, notNullValue())
-        assertThat(sut.characterComics.value, notNullValue())
-
-        delayer.onComplete()
 
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, equalTo(R.string.default_error))
@@ -507,7 +412,7 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a failed comics request when retry requested then should reload same page`() {
+    fun `given a failed comics request when retry requested then should reload same page`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
@@ -519,11 +424,11 @@ class CharacterDetailsViewModelTest {
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(expected)
+        ) doReturn expected
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(expectedComic)
+        ) doReturn expectedComic
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -532,9 +437,7 @@ class CharacterDetailsViewModelTest {
 
         whenever(
             mockService.loadCharacterComics(100, 10)
-        ) doReturn Single.error<ResponseBody<Comic>>(
-            Throwable("dummy error")
-        )
+        ).thenThrow()
 
         sut.loadCharacterComics()
 
@@ -548,21 +451,23 @@ class CharacterDetailsViewModelTest {
         // then
 
         verify(mockService, times(2)).loadCharacterComics(100, 10)
+
+        Unit
     }
 
     @Test
-    fun `given a successful pagination scenario when checking pagination then should return true`() {
+    fun `given a successful pagination scenario when checking pagination then should return true`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -583,41 +488,43 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a loading request when checking pagination then should return false`() {
+    fun `given a loading request when checking pagination then should return false`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
-        whenever(
-            mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics).delaySubscription(delayer)
+        doAnswer {
+            // given
+
+            assertThat(sut.isLoading.value, equalTo(true))
+
+            val scrollY = 100
+            val oldScrollY = 0
+            val scrollViewHeight = 800
+            val recyclerViewHeight = 600
+
+            // when
+
+            val actual = sut.shouldPaginate(scrollY, oldScrollY, scrollViewHeight, recyclerViewHeight)
+
+            // then
+
+            assertThat(actual, equalTo(false))
+
+            dummyCharacterComics
+        }.whenever(mockService).loadCharacterComics(100, 0)
 
         sut.loadCharacterInfo(mockExtras)
 
-        // given
-
-        assertThat(sut.isLoading.value, equalTo(true))
-
-        val scrollY = 100
-        val oldScrollY = 0
-        val scrollViewHeight = 800
-        val recyclerViewHeight = 600
-
-        // when
-
-        val actual = sut.shouldPaginate(scrollY, oldScrollY, scrollViewHeight, recyclerViewHeight)
-
-        // then
-
-        assertThat(actual, equalTo(false))
+        assertThat(sut.isLoading.value, equalTo(false))
     }
 
     @Test
-    fun `given no initial data when checking pagination then should return false`() {
+    fun `given no initial data when checking pagination then should return false`() = runBlocking {
         // given
 
         assertThat(sut.characterDetails.value, nullValue())
@@ -637,7 +544,7 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given last page reached when checking pagination then should return false`() {
+    fun `given last page reached when checking pagination then should return false`() = runBlocking {
         val dummyCharacterComics = ResponseBody(
             200,
             "ok",
@@ -656,11 +563,11 @@ class CharacterDetailsViewModelTest {
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -681,18 +588,18 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given scrollview is scrolling up when checking pagination then should return false`() {
+    fun `given scrollview is scrolling up when checking pagination then should return false`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -713,18 +620,18 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a scroll movement at the top of the scrollview when checking pagination then should return false`() {
+    fun `given a scroll movement at the top of the scrollview when checking pagination then should return false`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -745,18 +652,16 @@ class CharacterDetailsViewModelTest {
     }
 
     @Test
-    fun `given a failed details request when reload requested then should reload details`() {
+    fun `given a failed details request when reload requested then should reload details`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
-        whenever(
-            mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.error<ResponseBody<CharacterDetails>>(Throwable("dummy exception"))
+        doAnswer { null }.whenever(mockService).loadCharacterDetails(anyInt())
 
         assertThat(sut.isLoading.value, nullValue())
         assertThat(sut.hasError.value, nullValue())
@@ -769,6 +674,7 @@ class CharacterDetailsViewModelTest {
 
         verify(mockService).loadCharacterDetails(100)
         verify(mockService).loadCharacterComics(100, 0)
+
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, equalTo(R.string.default_error))
         assertThat(sut.characterComics.value, nullValue())
@@ -781,21 +687,23 @@ class CharacterDetailsViewModelTest {
 
         verify(mockService, times(2)).loadCharacterDetails(100)
         verify(mockService, times(2)).loadCharacterComics(100, 0)
+
+        Unit
     }
 
     @Test
-    fun `given a failed comics request when reload requested then should reload comics`() {
+    fun `given a failed comics request when reload requested then should reload comics`() = runBlocking {
         whenever(
             mockExtras.getInt(CharacterDetailsViewModel.CHARACTER_ID_KEY)
         ) doReturn 100
 
         whenever(
             mockService.loadCharacterDetails(anyInt())
-        ) doReturn Single.just(dummyCharacterDetailsResponse)
+        ) doReturn dummyCharacterDetailsResponse
 
         whenever(
             mockService.loadCharacterComics(100, 0)
-        ) doReturn Single.just(dummyCharacterComics)
+        ) doReturn dummyCharacterComics
 
         sut.loadCharacterInfo(mockExtras)
 
@@ -806,7 +714,7 @@ class CharacterDetailsViewModelTest {
 
         whenever(
             mockService.loadCharacterComics(100, 10)
-        ) doReturn Single.error(Throwable("dummy exception"))
+        ).thenThrow()
 
         assertThat(sut.isLoading.value, equalTo(false))
         assertThat(sut.hasError.value, nullValue())
@@ -827,5 +735,7 @@ class CharacterDetailsViewModelTest {
         // then
 
         verify(mockService, times(2)).loadCharacterComics(100, 10)
+
+        Unit
     }
 }

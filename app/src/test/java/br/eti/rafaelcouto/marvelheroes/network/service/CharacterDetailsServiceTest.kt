@@ -1,18 +1,19 @@
 package br.eti.rafaelcouto.marvelheroes.network.service
 
 import android.os.Build
-import br.eti.rafaelcouto.marvelheroes.SynchronousTestRule
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.network.config.INetworkAPI
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import io.reactivex.Single
+import kotlinx.coroutines.runBlocking
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.equalTo
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.anyInt
@@ -24,11 +25,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class CharacterDetailsServiceTest {
-    // rules
-    @Rule
-    @JvmField
-    val testRule = SynchronousTestRule()
-
     // sut
     private lateinit var sut: CharacterDetailsService
 
@@ -69,10 +65,10 @@ class CharacterDetailsServiceTest {
     }
 
     @Test
-    fun `given a character id when details requested then should return character details`() {
+    fun `given a character id when details requested then should return character details`() = runBlocking {
         val expected = dummyCharacterDetailsResponse
 
-        whenever(sut.loadCharacterDetails(anyInt())) doReturn Single.just(expected)
+        whenever(sut.loadCharacterDetails(anyInt())) doReturn expected
 
         // given
 
@@ -80,19 +76,19 @@ class CharacterDetailsServiceTest {
 
         // when
 
-        val result = sut.loadCharacterDetails(stubId).test()
+        val result = sut.loadCharacterDetails(stubId)
 
         // then
 
         verify(mockApi).getPublicCharacterInfo(19)
-        result.assertNoErrors().assertValue(expected)
+        assertThat(expected, equalTo(result))
     }
 
-    @Test
-    fun `given a character id when details requested then should return error`() {
+    @Test(expected = Throwable::class)
+    fun `given a character id when details requested then should return error`() = runBlocking {
         val expected = Throwable("dummy exception")
 
-        whenever(sut.loadCharacterDetails(anyInt())) doReturn Single.error(expected)
+        whenever(sut.loadCharacterDetails(anyInt())) doThrow expected
 
         // given
 
@@ -100,19 +96,25 @@ class CharacterDetailsServiceTest {
 
         // when
 
-        val result = sut.loadCharacterDetails(stubId).test()
+        try {
+            sut.loadCharacterDetails(stubId)
+        } catch (e: Exception) {
+            // then
 
-        // then
+            verify(mockApi).getPublicCharacterInfo(19)
+            assertThat(e.message, equalTo("dummy exception"))
 
-        verify(mockApi).getPublicCharacterInfo(19)
-        result.assertError(expected)
+            throw e
+        }
+
+        Unit
     }
 
     @Test
-    fun `given a character id when comics requested then should return comics list`() {
+    fun `given a character id when comics requested then should return comics list`() = runBlocking {
         val expected = dummyComicsList
 
-        whenever(sut.loadCharacterComics(19, 0)) doReturn Single.just(expected)
+        whenever(sut.loadCharacterComics(19, 0)) doReturn expected
 
         // given
 
@@ -120,19 +122,19 @@ class CharacterDetailsServiceTest {
 
         // when
 
-        val result = sut.loadCharacterComics(stubId, 0).test()
+        val result = sut.loadCharacterComics(stubId, 0)
 
         // then
 
         verify(mockApi).getPublicCharacterComics(19, 10, 0)
-        result.assertNoErrors().assertValue(expected)
+        assertThat(expected, equalTo(result))
     }
 
-    @Test
-    fun `given a character id when comics requested then should return error`() {
+    @Test(expected = Throwable::class)
+    fun `given a character id when comics requested then should return error`() = runBlocking {
         val expected = Throwable("dummy exception")
 
-        whenever(sut.loadCharacterComics(19, 0)) doReturn Single.error(expected)
+        whenever(sut.loadCharacterComics(19, 0)) doThrow expected
 
         // given
 
@@ -140,11 +142,17 @@ class CharacterDetailsServiceTest {
 
         // when
 
-        val result = sut.loadCharacterComics(stubId, 0).test()
+        try {
+            sut.loadCharacterComics(stubId, 0)
+        } catch (e: Exception) {
+            // then
 
-        // then
+            verify(mockApi).getPublicCharacterComics(19, 10, 0)
+            assertThat(e.message, equalTo("dummy exception"))
 
-        verify(mockApi).getPublicCharacterComics(19, 10, 0)
-        result.assertError(expected)
+            throw e
+        }
+
+        Unit
     }
 }
