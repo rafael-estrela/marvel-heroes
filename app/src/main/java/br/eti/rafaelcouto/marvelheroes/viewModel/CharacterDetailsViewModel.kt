@@ -1,159 +1,55 @@
 package br.eti.rafaelcouto.marvelheroes.viewModel
 
-import android.os.Bundle
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
-import br.eti.rafaelcouto.marvelheroes.R
+import androidx.lifecycle.ViewModel
+import androidx.paging.LivePagedListBuilder
+import androidx.paging.PagedList
+import br.eti.rafaelcouto.marvelheroes.data.State
+import br.eti.rafaelcouto.marvelheroes.data.datasource.details.CharacterDetailsDataSourceFactory
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
-import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
-import br.eti.rafaelcouto.marvelheroes.network.service.CharacterDetailsService
+import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.zip
-import kotlinx.coroutines.launch
 
 class CharacterDetailsViewModel(
-    private val service: CharacterDetailsService,
-    context: CoroutineContext = IO
-) : BaseViewModel(context) {
-    companion object {
-        const val CHARACTER_ID_KEY = "characterIdExtra"
-        const val COMICS_PER_PAGE = 10
-    }
+    override val coroutineContext: CoroutineContext = IO
+) : ViewModel(), CoroutineScope {
+    private val comicsPerPage = 10
 
-    // lifecycle
-    private val mCharacterDetails = MutableLiveData<CharacterDetails>()
-    val characterDetails: LiveData<CharacterDetails>
-        get() = mCharacterDetails
+    private lateinit var factory: CharacterDetailsDataSourceFactory
+    lateinit var characterComics: LiveData<PagedList<Comic>>
 
-    val characterComics = Transformations.map(characterDetails) { it.comics }
-
-    // pagination
-    override val offset: Int
-        get() = page * COMICS_PER_PAGE
-
-    // character id
-    private var characterId: Int = 0
-
-    // capturing id
-    fun loadCharacterInfo(extras: Bundle?) {
-        extras?.let {
-            characterId = it.getInt(CHARACTER_ID_KEY)
-
-            loadCharacterInfo()
+    val state: LiveData<State> by lazy {
+        Transformations.switchMap(factory.dataSource) {
+            it.state
         }
     }
 
-    // retry
-    fun retry() {
-        mCharacterDetails.value?.let {
-            loadCharacterComics()
-        } ?: run {
-            loadCharacterInfo()
+    val copyright: LiveData<String> by lazy {
+        Transformations.switchMap(factory.dataSource) { it.copyright }
+    }
+
+    val characterDetails: LiveData<CharacterDetails> by lazy {
+        Transformations.switchMap(factory.dataSource) {
+            it.characterDetails
         }
     }
 
-    // pagination verification
-    fun shouldPaginate(
-        scrollY: Int,
-        oldScrollY: Int,
-        scrollViewHeight: Int,
-        recyclerViewHeight: Int
-    ): Boolean {
-        return takeIf {
-            scrollY >= recyclerViewHeight - scrollViewHeight
-        }?.takeIf {
-            scrollY > oldScrollY
-        }?.takeIf {
-            isLoading.value?.let { !it } ?: true
-        }?.takeIf {
-            characterComics.value?.size?.let {
-                it < maxItems
-            } ?: false
-        } != null
-    }
+    fun retry() = factory.dataSource.value?.retry()
 
-    // api requests
-    fun loadCharacterComics() {
-        mIsLoading.value = true
+    fun setup(
+        characterId: Int,
+        factory: CharacterDetailsDataSourceFactory = CharacterDetailsDataSourceFactory(characterId, this)
+    ) {
+        this.factory = factory
 
-        viewModelScope.launch {
-            try {
-                val result = service.loadCharacterComics(characterId, offset)
+        val config = PagedList.Config.Builder()
+            .setPageSize(comicsPerPage)
+            .setEnablePlaceholders(false)
+            .build()
 
-                treatComics(result)
-                updateComics(result.data.results)
-
-                page++
-            } catch (e: Exception) {
-                mHasError.postValue(R.string.default_error)
-            } finally {
-                mIsLoading.postValue(false)
-            }
-        }
-    }
-
-    private fun loadCharacterInfo() {
-        mIsLoading.value = true
-
-        viewModelScope.launch {
-            try {
-                val detailsFlow = flowOf(async { service.loadCharacterDetails(characterId) })
-                val comicsFlow = flowOf(async { service.loadCharacterComics(characterId, offset) })
-
-                detailsFlow.zip(comicsFlow) { deferredDetails, deferredComics ->
-                    treatDetails(deferredDetails.await(), deferredComics.await())
-                }.collect {
-                    mCharacterDetails.postValue(it)
-                }
-
-                page++
-            } catch (e: Exception) {
-                mHasError.postValue(R.string.default_error)
-            } finally {
-                mIsLoading.postValue(false)
-            }
-        }
-    }
-
-    private fun treatDetails(
-        detailsResult: ResponseBody<CharacterDetails>,
-        comicsResult: ResponseBody<Comic>
-    ): CharacterDetails {
-        val details = detailsResult.data.results.first()
-        val comics = comicsResult.data.results
-
-        treatComics(comicsResult)
-
-        return CharacterDetails(details.description, comics).apply {
-            name = details.name
-            thumbnail = details.thumbnail
-        }
-    }
-
-    private fun treatComics(result: ResponseBody<Comic>) {
-        result.apply {
-            maxItems = data.total
-            mCopyright.postValue(attributionText)
-        }
-    }
-
-    private fun updateComics(comics: List<Comic>) {
-        mCharacterDetails.value?.let {
-            val details = CharacterDetails(
-                it.description,
-                it.comics + comics
-            ).apply {
-                name = it.name
-                thumbnail = it.thumbnail
-            }
-
-            mCharacterDetails.postValue(details)
-        }
+        characterComics = LivePagedListBuilder(factory, config).build()
     }
 }

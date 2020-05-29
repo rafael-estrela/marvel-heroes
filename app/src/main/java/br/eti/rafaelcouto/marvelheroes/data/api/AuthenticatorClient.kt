@@ -1,4 +1,4 @@
-package br.eti.rafaelcouto.marvelheroes.network.config
+package br.eti.rafaelcouto.marvelheroes.data.api
 
 import br.eti.rafaelcouto.marvelheroes.BuildConfig
 import java.math.BigInteger

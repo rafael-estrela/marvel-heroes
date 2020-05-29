@@ -10,7 +10,7 @@ class CharactersListRouter(private val activity: AppCompatActivity) {
     fun proceedToCharacterDetails(characterId: Int) {
         activity.startActivity(
             Intent(activity, CharacterDetailsActivity::class.java).apply {
-                putExtra(CharacterDetailsViewModel.CHARACTER_ID_KEY, characterId)
+                putExtra(CharacterDetailsActivity.CHARACTER_ID_KEY, characterId)
             }
         )
 

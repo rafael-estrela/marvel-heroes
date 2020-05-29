@@ -1,4 +1,4 @@
-package br.eti.rafaelcouto.marvelheroes.network.config
+package br.eti.rafaelcouto.marvelheroes.data.api
 
 import br.eti.rafaelcouto.marvelheroes.BuildConfig
 import br.eti.rafaelcouto.marvelheroes.model.Character
@@ -25,15 +25,8 @@ interface INetworkAPI {
     @GET("v1/public/characters")
     suspend fun getPublicCharacters(
         @Query("limit") limit: Int,
-        @Query("offset") offset: Int
-    ): ResponseBody<Character>
-
-    // necessário porque, caso nameStartsWith esteja vazio, retorna 409
-    @GET("v1/public/characters")
-    suspend fun getPublicCharacters(
-        @Query("limit") limit: Int,
         @Query("offset") offset: Int,
-        @Query("nameStartsWith") name: String
+        @Query("nameStartsWith") name: String?
     ): ResponseBody<Character>
 
     @GET("v1/public/characters/{characterId}")

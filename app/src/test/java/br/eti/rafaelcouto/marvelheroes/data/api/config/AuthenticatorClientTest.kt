@@ -1,7 +1,8 @@
-package br.eti.rafaelcouto.marvelheroes.network.config
+package br.eti.rafaelcouto.marvelheroes.data.api.config
 
 import android.os.Build
 import br.eti.rafaelcouto.marvelheroes.BuildConfig
+import br.eti.rafaelcouto.marvelheroes.data.api.AuthenticatorClient
 import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.mockwebserver.MockResponse

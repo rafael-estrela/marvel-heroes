@@ -2,125 +2,58 @@ package br.eti.rafaelcouto.marvelheroes.viewModel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import br.eti.rafaelcouto.marvelheroes.R
+import androidx.lifecycle.Transformations
+import androidx.lifecycle.ViewModel
+import androidx.paging.LivePagedListBuilder
+import androidx.paging.PagedList
+import br.eti.rafaelcouto.marvelheroes.data.State
+import br.eti.rafaelcouto.marvelheroes.data.datasource.list.CharactersListDataSourceFactory
 import br.eti.rafaelcouto.marvelheroes.model.Character
-import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
-import br.eti.rafaelcouto.marvelheroes.network.service.CharactersListService
 import br.eti.rafaelcouto.marvelheroes.router.CharactersListRouter
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 class CharactersListViewModel(
     private val router: CharactersListRouter,
-    private val service: CharactersListService,
-    context: CoroutineContext = IO
-) : BaseViewModel(context) {
-    // static
-    companion object {
-        const val CHARACTERS_PER_PAGE = 20
+    override val coroutineContext: CoroutineContext = IO
+) : ViewModel(), CoroutineScope {
+    private val charactersPerPage = 20
+
+    private lateinit var factory: CharactersListDataSourceFactory
+    lateinit var characters: LiveData<PagedList<Character>>
+
+    val state: LiveData<State> by lazy {
+        Transformations.switchMap(factory.dataSource) { it.state }
     }
 
-    // liveData
-    private val mCharacters = MutableLiveData<List<Character>>()
-    val characters: LiveData<List<Character>>
-        get() = mCharacters
-
-    private var isFiltering = false
-    private var lastFilterTerm = ""
-
-    override val offset: Int
-        get() = page * CHARACTERS_PER_PAGE
-
-    // api requests
-    fun loadCharacters() {
-        isFiltering = false
-        lastFilterTerm = ""
-
-        mIsLoading.value = true
-
-        viewModelScope.launch {
-            try {
-                treatResult(service.loadCharacters(offset))
-                page++
-            } catch (e: Exception) {
-                mHasError.postValue(R.string.default_error)
-            } finally {
-                mIsLoading.postValue(false)
-            }
-        }
+    val copyright: LiveData<String> by lazy {
+        Transformations.switchMap(factory.dataSource) { it.copyright }
     }
 
-    fun filterCharacters(name: String) {
-        isFiltering = true
-        lastFilterTerm = name
+    private val mFilterValue = MutableLiveData<String?>()
 
-        mIsLoading.value = true
+    fun setup(factory: CharactersListDataSourceFactory = CharactersListDataSourceFactory(mFilterValue, this)) {
+        this.factory = factory
 
-        jobs.add(launch {
-            try {
-                treatResult(service.filterCharacters(offset, name))
-                page++
-            } catch (e: Exception) {
-                mHasError.postValue(R.string.default_error)
-            } finally {
-                mIsLoading.postValue(false)
-            }
-        })
+        val config = PagedList.Config.Builder()
+            .setPageSize(charactersPerPage)
+            .setEnablePlaceholders(false)
+            .build()
+
+        characters = LivePagedListBuilder(factory, config).build()
     }
 
-    private fun treatResult(result: ResponseBody<Character>) {
-        result.apply {
-            maxItems = data.total
-            mCopyright.postValue(attributionText)
-
-            mCharacters.value?.let {
-                mCharacters.postValue(it + data.results)
-            } ?: run {
-                mCharacters.postValue(data.results)
-            }
-        }
+    fun updateFilterState(term: String?) {
+        mFilterValue.value = term
+        factory.dataSource.value?.invalidate()
     }
 
-    fun clearList() {
-        mCharacters.value = emptyList()
-        page = 0
-    }
+    fun retry() = factory.dataSource.value?.retry()
 
-    // pagination verification
-    fun shouldPaginate(
-        visibleItems: Int,
-        totalItems: Int,
-        firstVisibleItemPosition: Int,
-        dy: Int
-    ): Boolean {
-        return takeIf {
-            dy > 0
-        }?.takeIf {
-            isLoading.value?.let { !it } ?: true
-        }?.takeIf {
-            visibleItems + firstVisibleItemPosition >= totalItems
-        }?.takeIf {
-            firstVisibleItemPosition >= 0
-        }?.takeIf {
-            characters.value?.size?.let {
-                it < maxItems
-            } ?: false
-        } != null
-    }
-
-    fun reload() {
-        if (isFiltering) {
-            filterCharacters(lastFilterTerm)
-        } else {
-            loadCharacters()
-        }
-    }
-
-    // click events
     fun onCharacterSelected(position: Int) {
-        mCharacters.value?.let {
-            router.proceedToCharacterDetails(it[position].id)
+        characters.value?.let {
+            router.proceedToCharacterDetails(it[position]?.id ?: 0)
         }
     }
 }

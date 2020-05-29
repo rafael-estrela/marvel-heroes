@@ -1,27 +1,29 @@
 package br.eti.rafaelcouto.marvelheroes.view.list.character
 
-import android.content.Context
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.LiveData
+import androidx.paging.PagedListAdapter
 import br.eti.rafaelcouto.marvelheroes.R
+import br.eti.rafaelcouto.marvelheroes.data.datasource.list.CharacterDiffUtil
 import br.eti.rafaelcouto.marvelheroes.model.Character
-import br.eti.rafaelcouto.marvelheroes.view.list.BaseAdapter
 
-class CharactersAdapter(
-    context: Context,
-    items: LiveData<List<Character>>
-) : BaseAdapter<Character, CharactersViewHolder>(context, items) {
+class CharactersAdapter : PagedListAdapter<Character, CharactersViewHolder>(CharacterDiffUtil()) {
     var onItemClick: OnItemClickListener? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CharactersViewHolder {
         return CharactersViewHolder(
-            DataBindingUtil.inflate(inflater, viewType, parent, false)
+            DataBindingUtil.inflate(
+                LayoutInflater.from(parent.context),
+                viewType,
+                parent,
+                false
+            )
         )
     }
 
     override fun onBindViewHolder(holder: CharactersViewHolder, position: Int) {
-        holder.binding.item = getItemAtPosition(position)
+        holder.binding.item = getItem(position)
         holder.setOnItemClickListener(onItemClick)
         holder.displayImage()
     }

@@ -8,7 +8,7 @@ import br.eti.rafaelcouto.marvelheroes.model.Comic
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
 import br.eti.rafaelcouto.marvelheroes.model.general.Thumbnail
-import br.eti.rafaelcouto.marvelheroes.network.service.CharacterDetailsService
+import br.eti.rafaelcouto.marvelheroes.data.api.service.CharacterDetailsService
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times

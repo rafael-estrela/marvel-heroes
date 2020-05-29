@@ -82,6 +82,7 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:$versions.constraintLayout"
     implementation "androidx.lifecycle:lifecycle-extensions:$versions.lifecycle"
     implementation "androidx.recyclerview:recyclerview:$versions.recyclerView"
+    implementation "androidx.paging:paging-runtime-ktx:$versions.paging"
     implementation "com.google.android.material:material:$versions.material"
 
     // api requests

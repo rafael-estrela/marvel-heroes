@@ -11,21 +11,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
-import androidx.lifecycle.Transformations
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import br.eti.rafaelcouto.marvelheroes.R
+import br.eti.rafaelcouto.marvelheroes.data.State
 import br.eti.rafaelcouto.marvelheroes.databinding.ActivityCharactersListBinding
-import br.eti.rafaelcouto.marvelheroes.network.config.INetworkAPI
-import br.eti.rafaelcouto.marvelheroes.network.service.CharactersListService
 import br.eti.rafaelcouto.marvelheroes.router.CharactersListRouter
 import br.eti.rafaelcouto.marvelheroes.view.list.character.CharactersAdapter
 import br.eti.rafaelcouto.marvelheroes.view.list.character.OnItemClickListener
 import br.eti.rafaelcouto.marvelheroes.viewModel.CharactersListViewModel
 import com.google.android.material.snackbar.Snackbar
 
-class CharactersListActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
+class CharactersListActivity : AppCompatActivity(), SearchView.OnQueryTextListener, MenuItem.OnActionExpandListener {
     private lateinit var mViewModel: CharactersListViewModel
     private lateinit var binding: ActivityCharactersListBinding
 
@@ -35,28 +32,30 @@ class CharactersListActivity : AppCompatActivity(), SearchView.OnQueryTextListen
             else -> 5
         }
 
+    private val mAdapter = CharactersAdapter().apply {
+        setOnItemClickListener(object :
+            OnItemClickListener {
+            override fun onItemClick(position: Int) {
+                mViewModel.onCharacterSelected(position)
+            }
+        })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        mViewModel = CharactersListViewModel(CharactersListRouter(this))
+
         binding = DataBindingUtil.setContentView(this, R.layout.activity_characters_list)
-        mViewModel = CharactersListViewModel(
-            CharactersListRouter(this),
-            CharactersListService(INetworkAPI.baseApi)
-        )
 
         binding.apply {
             lifecycleOwner = this@CharactersListActivity
             viewModel = mViewModel
-
-            loaderVisibility = Transformations.map(mViewModel.isLoading) {
-                if (it) View.VISIBLE else View.GONE
-            }
         }
 
+        mViewModel.setup()
         setupRecyclerView()
         observe()
-
-        mViewModel.loadCharacters()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -66,23 +65,10 @@ class CharactersListActivity : AppCompatActivity(), SearchView.OnQueryTextListen
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
         val searchView = searchItem?.actionView as? SearchView
 
-        searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean = true
+        searchItem?.setOnActionExpandListener(this)
 
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-                mViewModel.apply {
-                    clearList()
-                    loadCharacters()
-                }
-
-                return true
-            }
-        })
-
-        searchView?.apply {
-            setSearchableInfo(searchManager.getSearchableInfo(componentName))
-            setOnQueryTextListener(this@CharactersListActivity)
-        }
+        searchView?.setSearchableInfo(searchManager.getSearchableInfo(componentName))
+        searchView?.setOnQueryTextListener(this@CharactersListActivity)
 
         return super.onCreateOptionsMenu(menu)
     }
@@ -93,58 +79,41 @@ class CharactersListActivity : AppCompatActivity(), SearchView.OnQueryTextListen
         binding.aCharactersListRvCharacters.apply {
             layoutManager = GridLayoutManager(context, numberOfColumns)
             itemAnimator = DefaultItemAnimator()
-            adapter = CharactersAdapter(
-                context,
-                mViewModel.characters
-            ).apply {
-                setOnItemClickListener(object :
-                    OnItemClickListener {
-                    override fun onItemClick(position: Int) {
-                        mViewModel.onCharacterSelected(position)
-                    }
-                })
-            }
-
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    val mngr = recyclerView.layoutManager as? GridLayoutManager ?: return
-
-                    mViewModel.shouldPaginate(
-                        mngr.childCount,
-                        mngr.itemCount,
-                        mngr.findFirstVisibleItemPosition(),
-                        dy
-                    ).takeIf { it }?.run {
-                        mViewModel.reload()
-                    }
-                }
-            })
+            adapter = mAdapter
         }
     }
 
     private fun observe() {
-        mViewModel.characters.observe(this, Observer {
-            binding.apply {
-                binding.aCharactersListRvCharacters.adapter?.notifyDataSetChanged()
-            }
-        })
+        mViewModel.characters.observe(this, Observer { mAdapter.submitList(it) })
 
-        mViewModel.hasError.observe(this, Observer {
-            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).apply {
-                setAction(R.string.default_retry) { mViewModel.reload() }
-                show()
+        mViewModel.state.observe(this, Observer { state ->
+            if (state == State.LOADING) {
+                binding.aCharactersListPbLoader.visibility = View.VISIBLE
+            } else {
+                binding.aCharactersListPbLoader.visibility = View.GONE
+
+                if (state == State.FAILED) {
+                    Snackbar.make(binding.root, getString(R.string.default_error), Snackbar.LENGTH_INDEFINITE).apply {
+                        setAction(R.string.default_retry) { mViewModel.retry() }
+                        show()
+                    }
+                }
             }
         })
     }
 
     override fun onQueryTextChange(newText: String?): Boolean = false
+    override fun onMenuItemActionExpand(item: MenuItem?): Boolean = true
 
     override fun onQueryTextSubmit(query: String?): Boolean {
-        mViewModel.apply {
-            clearList()
-            filterCharacters(query.orEmpty())
-        }
+        mViewModel.updateFilterState(query)
 
         return false
+    }
+
+    override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+        mViewModel.updateFilterState(null)
+
+        return true
     }
 }

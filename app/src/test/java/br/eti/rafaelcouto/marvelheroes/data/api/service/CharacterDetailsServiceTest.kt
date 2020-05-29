@@ -1,11 +1,11 @@
-package br.eti.rafaelcouto.marvelheroes.network.service
+package br.eti.rafaelcouto.marvelheroes.data.api.service
 
 import android.os.Build
 import br.eti.rafaelcouto.marvelheroes.model.CharacterDetails
 import br.eti.rafaelcouto.marvelheroes.model.Comic
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
-import br.eti.rafaelcouto.marvelheroes.network.config.INetworkAPI
+import br.eti.rafaelcouto.marvelheroes.data.api.INetworkAPI
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify

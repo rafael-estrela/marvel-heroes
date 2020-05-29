@@ -5,10 +5,9 @@ import br.eti.rafaelcouto.marvelheroes.R
 import br.eti.rafaelcouto.marvelheroes.model.Character
 import br.eti.rafaelcouto.marvelheroes.model.general.DataWrapper
 import br.eti.rafaelcouto.marvelheroes.model.general.ResponseBody
-import br.eti.rafaelcouto.marvelheroes.network.service.CharactersListService
+import br.eti.rafaelcouto.marvelheroes.data.api.service.CharactersListService
 import br.eti.rafaelcouto.marvelheroes.router.CharactersListRouter
 import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions

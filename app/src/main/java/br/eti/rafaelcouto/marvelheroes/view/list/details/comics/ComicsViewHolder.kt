@@ -1,4 +1,4 @@
-package br.eti.rafaelcouto.marvelheroes.view.list.comic
+package br.eti.rafaelcouto.marvelheroes.view.list.details.comics
 
 import androidx.recyclerview.widget.RecyclerView
 import br.eti.rafaelcouto.marvelheroes.databinding.ItemComicBinding
